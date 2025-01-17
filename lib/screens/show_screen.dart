@@ -90,7 +90,7 @@ class _ShowScreenState extends State<ShowScreen> {
                 ),
                 controller: titleController,
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 29,
                   fontWeight: FontWeight.bold,
                 ),
                 onSubmitted: (_) => updateNote(),
