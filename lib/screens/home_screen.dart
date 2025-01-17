@@ -145,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ? Center(child: Text('There is no any note'))
               : ListView.builder(
                   itemCount: box.length,
-                  padding: EdgeInsets.all(10), // فاصله کلی از اطراف
+                  padding: EdgeInsets.all(11), // فاصله کلی از اطراف
                   itemBuilder: (context, index) {
                     final user = box.getAt(index);
                     return Card(
