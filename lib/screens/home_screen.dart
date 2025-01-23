@@ -200,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         }
                       },
                       child: Card(
-                        margin: const EdgeInsets.only(bottom: 10),
+                        margin: const EdgeInsets.only(bottom: 11),
                         elevation: 2,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(5),
