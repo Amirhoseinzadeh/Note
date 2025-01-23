@@ -8,6 +8,7 @@ class UserModel extends HiveObject{
   final String title;
   @HiveField(1)
   final String description;
-  UserModel({required this.title,required this.description});
-
+  @HiveField(2)
+  bool isFavorite;
+  UserModel({required this.title,required this.description, this.isFavorite = false});
 }

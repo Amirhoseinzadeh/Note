@@ -5,11 +5,12 @@ import 'package:note/model/user_model.dart';
 class ShowScreen extends StatefulWidget {
   final int noteIndex;
   final UserModel note;
+  final VoidCallback updateItemsWithCount;
 
   const ShowScreen({
     super.key,
     required this.note,
-    required this.noteIndex,
+    required this.noteIndex, required this.updateItemsWithCount,
   });
 
   @override
@@ -17,6 +18,8 @@ class ShowScreen extends StatefulWidget {
 }
 
 class _ShowScreenState extends State<ShowScreen> {
+  final box = Hive.box<UserModel>('user_Box');
+
   late TextEditingController titleController;
   late TextEditingController descriptionController;
   bool isEditingTitle = false;
@@ -31,7 +34,7 @@ class _ShowScreenState extends State<ShowScreen> {
   }
 
   void updateNote() {
-    final box = Hive.box<UserModel>('user_Box');
+    // final box = Hive.box<UserModel>('user_Box');
 
     final updatedNote = UserModel(
       title: titleController.text,
@@ -48,6 +51,7 @@ class _ShowScreenState extends State<ShowScreen> {
       isEditingTitle = false;
       isEditingDescription = false;
     });
+    Navigator.pop(context, true); // بازگشت و ارسال نتیجه به صفحه قبل
   }
 
   @override
@@ -59,12 +63,17 @@ class _ShowScreenState extends State<ShowScreen> {
         iconTheme: const IconThemeData(color: Color(0xFFFC9401)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.star_outline, color: Colors.black),
-            onPressed: (){},
+            icon: Icon(box.getAt(widget.noteIndex)!.isFavorite ? Icons.star : Icons.star_outline, color: Colors.orangeAccent),
+            onPressed: (){
+              toggleFavorite(widget.noteIndex);
+              widget.updateItemsWithCount();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.black),
-            onPressed: (){},
+            onPressed: (){
+              widget.updateItemsWithCount();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.save, color: Colors.black),
@@ -144,5 +153,13 @@ class _ShowScreenState extends State<ShowScreen> {
         ),
       ),
     );
+  }
+  void toggleFavorite(int index) {
+    final box = Hive.box<UserModel>('user_Box');
+    final user = box.getAt(index);
+    user?.isFavorite = !(user.isFavorite); // تغییر وضعیت
+    user?.save(); // ذخیره تغییر در Hive
+    setState(() {}); // به‌روزرسانی UI
+    // Navigator.pop(context, true); // بازگشت و ارسال نتیجه به صفحه قبل
   }
 }

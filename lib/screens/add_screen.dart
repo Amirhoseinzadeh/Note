@@ -4,7 +4,8 @@ import 'package:note/model/user_model.dart';
 import 'package:uuid/uuid.dart';
 
 class AddScreen extends StatefulWidget {
-  const AddScreen({super.key});
+  final VoidCallback updateItemsWithCount;
+  const AddScreen({super.key, required this.updateItemsWithCount});
 
   @override
   State<AddScreen> createState() => _AddScreenState();
@@ -38,6 +39,7 @@ class _AddScreenState extends State<AddScreen> {
                     title: _titleController.text,
                     description: _descriptionController.text),
               );
+              widget.updateItemsWithCount();
               Navigator.pop(context);
             },
             child: Padding(

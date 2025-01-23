@@ -7,7 +7,7 @@ import 'screens/home_screen.dart';
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  Hive.registerAdapter(UserModelAdapter());
+  Hive.registerAdapter(UserModelAdapter()); // به‌روزرسانی نسخه به 1 یا بالاتر
   await Hive.openBox<UserModel>('user_Box');
 
   runApp(const MyApp());

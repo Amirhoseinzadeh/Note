@@ -12,45 +12,38 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final box = Hive.box<UserModel>('user_Box');
+
   String dropdownValue = 'All notes';
-  final Map<String, int> itemsWithCount = {
-    'All notes': 5,
-    'Favorite': 3,
-  };
-
-  @override
-  void initState() {
-    super.initState();
-    final box = Hive.box<UserModel>('user_Box');
-    filteredList = box.values.toList().cast<UserModel>();
-  }
-
-
+  Map<String, int> itemsWithCount = {};
   bool isSearchActive = false;
-  bool isSelectionMode = false; // حالت انتخابی
+  bool isSelectionMode = false;
   List<int> selectedIndexes = [];
   List<UserModel> filteredList = [];
   TextEditingController searchController = TextEditingController();
 
   @override
-  Widget build(BuildContext context) {
-    final box = Hive.box<UserModel>('user_Box');
+  void initState() {
+    super.initState();
+    filteredList = box.values.toList().cast<UserModel>();
+    updateItemsWithCount();
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFFF5A630),
         title: isSelectionMode
             ? Text(
                 '${selectedIndexes.length} selected',
-                style: TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white),
               )
             : AnimatedCrossFade(
                 duration: const Duration(milliseconds: 300),
                 firstChild: DropdownButton<String>(
                   value: dropdownValue,
                   icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                  dropdownColor: Colors.white,
-                  underline: const SizedBox(),
                   items: itemsWithCount.keys
                       .map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
@@ -58,25 +51,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            value,
-                            style: const TextStyle(color: Colors.black),
-                          ),
+                          Text(value,
+                              style: const TextStyle(color: Colors.black)),
                           Text(
                             '${itemsWithCount[value]}',
                             style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 14,
-                            ),
+                                color: Colors.grey, fontSize: 14),
                           ),
                         ],
                       ),
                     );
                   }).toList(),
                   onChanged: (String? newValue) {
-                    setState(() {
-                      dropdownValue = newValue!;
-                    });
+                    updateDropdownFilter(newValue);
                   },
                   selectedItemBuilder: (BuildContext context) {
                     return itemsWithCount.keys.map((String value) {
@@ -104,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     border: InputBorder.none,
                   ),
                   onChanged: (value) {
-                    _filterNotes(value, box);
+                    _filterNotes(value);
                   },
                 ),
                 crossFadeState: isSearchActive
@@ -118,10 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: () {
                     setState(() {
                       if (selectedIndexes.length == box.length) {
-                        // اگر همه انتخاب شده‌اند، همه را لغو کن
                         selectedIndexes.clear();
                       } else {
-                        // اگر هیچ یا تعدادی انتخاب شده‌اند، همه را انتخاب کن
                         selectedIndexes =
                             List.generate(box.length, (index) => index);
                       }
@@ -132,20 +117,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: const Icon(Icons.delete_forever_outlined,
                       color: Colors.white),
                   onPressed: () {
-                    _deleteSelectedNotes(box);
+                    deleteSelectedNotes();
                   },
                 ),
                 IconButton(
-                  icon: const Icon(Icons.favorite_outline, color: Colors.white),
-                  onPressed: () {
-                    // عملیات علاقه‌مندی
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () {
                     setState(() {
                       isSelectionMode = false;
@@ -166,42 +142,26 @@ class _HomeScreenState extends State<HomeScreen> {
                       isSearchActive = !isSearchActive;
                       if (!isSearchActive) {
                         searchController.clear();
+                        _filterNotes('');
                       }
                     });
                   },
                 ),
-                PopupMenuButton(
-                  itemBuilder: (context) {
-                    return [
-                      PopupMenuItem(
-                        value: 1,
-                        child: Text('Edit'),
-                      ),
-                      PopupMenuItem(
-                        value: 2,
-                        child: Text('Manage category'),
-                      ),
-                    ];
-                  },
-                  onSelected: (value) {
-                    // عمل مربوط به آیتم انتخاب شده را اینجا پیاده‌سازی کنید
-                  },
-                  style: ButtonStyle(
-                    iconColor: WidgetStateProperty.all(Colors.white),
-                  ),
-                ),
               ],
       ),
-      body: ValueListenableBuilder<Box<UserModel>>(
-        valueListenable: box.listenable(),
-        builder: (BuildContext context, Box box, Widget? child) {
-          if(!isSearchActive){
-            // زمانی که جستجو فعال نیست، لیست فیلتر شده را از دیتابیس بروز می‌کنیم
-            filteredList = box.values.toList().cast<UserModel>();
-          }
+      body: ValueListenableBuilder(
+        valueListenable: Hive.box<UserModel>('user_Box').listenable(),
+        builder: (context, box, _) {
+          final allNotes = box.values.toList().cast<UserModel>();
+          final List<UserModel> filteredList = dropdownValue == 'All notes'
+              ? allNotes
+              : allNotes.where((note) => note.isFavorite == true).toList();
+
           return filteredList.isEmpty
               ? const Center(child: Text('There is no any note'))
               : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const ClampingScrollPhysics(),
                   itemCount: filteredList.length,
                   padding: const EdgeInsets.all(10),
                   itemBuilder: (context, index) {
@@ -230,8 +190,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  ShowScreen(note: user, noteIndex: index),
+                              builder: (context) => ShowScreen(
+                                note: user,
+                                noteIndex: index,
+                                updateItemsWithCount: updateItemsWithCount,
+                              ),
                             ),
                           );
                         }
@@ -263,16 +226,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                 )
                               : null,
                           title: Text(
+                            user.title,
                             maxLines: 1,
-                            user.title ?? 'No Title',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 19,
                             ),
                           ),
                           subtitle: Text(
-                              maxLines: 1,
-                              user.description ?? 'No Description'),
+                            user.description,
+                            maxLines: 1,
+                          ),
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 10),
                         ),
@@ -289,7 +253,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AddScreen(),
+              builder: (context) =>
+                  AddScreen(updateItemsWithCount: updateItemsWithCount),
             ),
           );
         },
@@ -297,34 +262,54 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _deleteSelectedNotes(Box box) {
-    // حذف از آخرین ایندکس به اولین
-    selectedIndexes.sort((a, b) => b.compareTo(a)); // مرتب‌سازی نزولی
+  void deleteSelectedNotes() {
+    selectedIndexes.sort((a, b) => b.compareTo(a));
     for (int index in selectedIndexes) {
       box.deleteAt(index);
     }
     setState(() {
       selectedIndexes.clear();
       isSelectionMode = false;
+      _filterNotes(searchController.text);
+      updateItemsWithCount();
     });
   }
-  void _filterNotes(String query, Box<UserModel> box) {
+
+  void _filterNotes(String query) {
+    final allNotes = box.values.toList().cast<UserModel>();
     setState(() {
-      if (query.isEmpty) {
-        filteredList = box.values.toList().cast<UserModel>();
+      if (dropdownValue == 'Favorite') {
+        filteredList = allNotes.where((note) => note.isFavorite).toList();
       } else {
-        filteredList = box.values
+        filteredList = allNotes;
+      }
+
+      if (query.isNotEmpty) {
+        filteredList = filteredList
             .where((note) =>
-        (note.title?.toLowerCase().contains(query.toLowerCase()) ??
-            false) ||
-            (note.description
-                ?.toLowerCase()
-                .contains(query.toLowerCase()) ??
-                false))
-            .toList()
-            .cast<UserModel>();
+                note.title.toLowerCase().contains(query.toLowerCase()) ||
+                note.description.toLowerCase().contains(query.toLowerCase()))
+            .toList();
       }
     });
   }
 
+  void updateDropdownFilter(String? newValue) {
+    setState(() {
+      dropdownValue = newValue!;
+      _filterNotes(searchController.text);
+      updateItemsWithCount();
+    });
+  }
+
+  void updateItemsWithCount() {
+    final allNotesCount = box.values.length;
+    final favoriteCount = box.values.where((note) => note.isFavorite).length;
+    setState(() {
+      itemsWithCount = {
+        'All notes': allNotesCount,
+        'Favorite': favoriteCount,
+      };
+    });
+  }
 }
