@@ -72,7 +72,9 @@ class _ShowScreenState extends State<ShowScreen> {
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.black),
             onPressed: (){
+              deleteSelectedNotes(widget.noteIndex);
               widget.updateItemsWithCount();
+              Navigator.pop(context);
             },
           ),
           IconButton(
@@ -162,4 +164,10 @@ class _ShowScreenState extends State<ShowScreen> {
     setState(() {}); // به‌روزرسانی UI
     // Navigator.pop(context, true); // بازگشت و ارسال نتیجه به صفحه قبل
   }
+  void deleteSelectedNotes(int index) {
+    setState(() {
+      box.deleteAt(index);
+    });
+  }
 }
+
